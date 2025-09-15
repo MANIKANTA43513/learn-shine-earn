@@ -1,73 +1,217 @@
-# Welcome to your Lovable project
+# CertifyMe - Micro-Certification Platform
 
-## Project info
+A comprehensive micro-certification platform where students can take quizzes, get instant results, and download professional certificates.
 
-**URL**: https://lovable.dev/projects/d2dcbd87-883c-4bca-a5e9-437eb7f08576
+## 🚀 Features
 
-## How can I edit this code?
+- **User Authentication**: Secure registration and login system
+- **Interactive Quizzes**: Question-by-question navigation with progress tracking
+- **Instant Results**: Immediate scoring and pass/fail status
+- **Certificate Generation**: Professional PDF certificates with user details
+- **Dashboard**: View quiz history, scores, and manage certificates
+- **Responsive Design**: Beautiful, modern interface that works on all devices
 
-There are several ways of editing your application.
+## 🛠️ Technology Stack
 
-**Use Lovable**
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI
+- **Authentication**: Supabase Auth
+- **Database**: Supabase (PostgreSQL)
+- **PDF Generation**: jsPDF, html2canvas
+- **Animations**: Framer Motion, React Confetti
+- **Build Tool**: Vite
+- **Deployment**: Vercel
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d2dcbd87-883c-4bca-a5e9-437eb7f08576) and start prompting.
+## 📋 Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 16+ and npm
+- Supabase account and project
 
-**Use your preferred IDE**
+## 🏗️ Setup Instructions
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Clone the Repository
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+git clone <your-repo-url>
+cd certifyme-platform
+```
 
-Follow these steps:
+### 2. Install Dependencies
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 3. Configure Supabase
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Go to Settings > API to get your project URL and anon key
+3. Update `src/lib/supabase.ts` with your Supabase credentials:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```typescript
+const supabaseUrl = 'YOUR_SUPABASE_URL'
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'
+```
+
+### 4. Database Setup
+
+Run these SQL commands in your Supabase SQL editor:
+
+```sql
+-- Create quizzes table
+CREATE TABLE quizzes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  passing_score INTEGER DEFAULT 70,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create questions table
+CREATE TABLE questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  options TEXT[] NOT NULL,
+  correct_answer INTEGER NOT NULL,
+  order_index INTEGER NOT NULL
+);
+
+-- Create results table
+CREATE TABLE results (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
+  score INTEGER NOT NULL,
+  total_questions INTEGER NOT NULL,
+  passed BOOLEAN NOT NULL,
+  answers INTEGER[] NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE results ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Quizzes are viewable by everyone" ON quizzes FOR SELECT USING (true);
+CREATE POLICY "Questions are viewable by everyone" ON questions FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own results" ON results FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own results" ON results FOR SELECT USING (auth.uid() = user_id);
+```
+
+### 5. Start Development Server
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Visit `http://localhost:8080` to see your application.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🎯 Usage
 
-**Use GitHub Codespaces**
+1. **Register/Login**: Create an account or sign in
+2. **Load Sample Data**: Click "Load Sample Quizzes" to populate the database
+3. **Take Quizzes**: Select a quiz and answer questions one by one
+4. **View Results**: Get instant feedback with score and pass/fail status
+5. **Download Certificate**: Generate and download PDF certificates for passed quizzes
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📊 Database Schema
 
-## What technologies are used for this project?
+### Users (Supabase Auth)
+- `id`: UUID (Primary Key)
+- `email`: String
+- `user_metadata.name`: String
 
-This project is built with:
+### Quizzes
+- `id`: UUID (Primary Key)
+- `title`: String
+- `description`: String
+- `passing_score`: Integer
+- `created_at`: Timestamp
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Questions
+- `id`: UUID (Primary Key)
+- `quiz_id`: UUID (Foreign Key)
+- `question_text`: String
+- `options`: String Array
+- `correct_answer`: Integer
+- `order_index`: Integer
 
-## How can I deploy this project?
+### Results
+- `id`: UUID (Primary Key)
+- `user_id`: UUID (Foreign Key)
+- `quiz_id`: UUID (Foreign Key)
+- `score`: Integer
+- `total_questions`: Integer
+- `passed`: Boolean
+- `answers`: Integer Array
+- `created_at`: Timestamp
 
-Simply open [Lovable](https://lovable.dev/projects/d2dcbd87-883c-4bca-a5e9-437eb7f08576) and click on Share -> Publish.
+## 🚀 Deployment
 
-## Can I connect a custom domain to my Lovable project?
+### Deploy to Vercel
 
-Yes, you can!
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables (if needed)
+3. Deploy with one click
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Environment Variables
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+No additional environment variables are required as Supabase credentials are configured in the source code. For production, consider using environment variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+## 🎨 Design Features
+
+- Modern, professional design with educational theme
+- Responsive layout for all screen sizes
+- Smooth animations and transitions
+- Progress indicators and interactive elements
+- Professional certificate templates
+- Accessible UI components
+
+## 🔧 Development
+
+### Project Structure
+
+```
+src/
+├── components/         # Reusable UI components
+├── pages/             # Application pages
+├── contexts/          # React contexts (Auth)
+├── lib/               # Utilities and configurations
+├── data/              # Sample data and helpers
+└── hooks/             # Custom React hooks
+```
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+## 📞 Support
+
+For questions or issues, please open a GitHub issue or contact the development team.
+
+---
+
+Built with ❤️ using React, Supabase, and modern web technologies.
